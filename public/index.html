@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RaazVault — Zero-Knowledge Secure File Sharing</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#040816;--bg2:#071225;--card:#0b1b33;--card2:#10213d;--border:#1c4268;--cyan:#00f5d4;--cyan2:#00b8a9;--pink:#ff2e88;--orange:#ffb347;--green:#00e676;--white:#eefbff;--muted:#79a9c2;--danger:#ff4d6d;--mono:'Share Tech Mono',monospace;--sans:'Syne',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--sans);background:radial-gradient(circle at 85% 10%,rgba(0,245,212,.14),transparent 30%),radial-gradient(circle at 10% 70%,rgba(255,46,136,.09),transparent 28%),var(--bg);color:var(--white);min-height:100vh;overflow-x:hidden}body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,212,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,.035) 1px,transparent 1px);background-size:42px 42px;pointer-events:none}.wrap{position:relative;z-index:1}.nav{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 7vw;border-bottom:1px solid var(--border);background:rgba(4,8,22,.7);backdrop-filter:blur(16px);position:sticky;top:0;z-index:10}.brand{display:flex;align-items:center;gap:14px;font-weight:800;font-size:1.35rem;letter-spacing:-.5px}.logo{width:48px;height:48px;position:relative;display:grid;place-items:center;filter:drop-shadow(0 0 18px rgba(0,245,212,.45))}.logo svg{position:absolute;inset:0}.logo span{font-size:1.15rem;color:var(--cyan);z-index:1}.brand b span{color:var(--cyan)}.navlinks{display:flex;gap:10px}.navlinks a{
+  font-family:var(--sans);
+  font-size:1rem;
+  font-weight:600;
+  color:var(--white);
+  text-decoration:none;
+  background:transparent;
+  border:none;
+  padding:8px 0;
+  box-shadow:none;
+}.navlinks .get-started{
+  background:linear-gradient(90deg,#00e5cc,#00b8a0);
+  color:#001018;
+  padding:12px 24px;
+  border-radius:14px;
+  font-weight:800;
+  box-shadow:0 8px 30px rgba(0,229,204,.35);
+}.navlinks .get-started:hover{
+  background:linear-gradient(90deg,#00f5d4,#00c2a8);
+  transform:translateY(-2px);
+  box-shadow:0 10px 35px rgba(0,229,204,.5);
+}.navlinks a:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 30px rgba(0,229,204,.5);
+  background:linear-gradient(90deg,#00f5d4,#00c2a8);
+}.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;padding:70px 7vw 40px;align-items:center}.badge{display:inline-flex;gap:8px;align-items:center;font-family:var(--mono);font-size:.78rem;color:var(--cyan);padding:8px 12px;border:1px solid var(--border);background:rgba(0,245,212,.08);border-radius:999px;margin-bottom:24px}.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green)}h1{font-size:clamp(2.8rem,6vw,6.8rem);line-height:.9;letter-spacing:-4px;margin-bottom:24px}.grad{background:linear-gradient(90deg,var(--cyan),#fff,var(--pink));-webkit-background-clip:text;color:transparent}.lead{font-size:1.08rem;color:var(--muted);line-height:1.8;max-width:680px}.hero-actions{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}.btn{border:0;background:var(--cyan);color:#03101c;font-family:var(--sans);font-weight:800;padding:14px 20px;border-radius:14px;cursor:pointer;text-decoration:none;box-shadow:0 16px 50px rgba(0,245,212,.2)}.btn.secondary{background:transparent;color:var(--cyan);border:1px solid var(--cyan);box-shadow:none}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}.mini{background:rgba(11,27,51,.72);border:1px solid var(--border);padding:18px;border-radius:20px}.mini strong{font-family:var(--mono);font-size:1.25rem;color:var(--cyan);display:block}.mini span{font-family:var(--mono);font-size:.72rem;color:var(--muted)}.vault-card{background:linear-gradient(180deg,rgba(11,27,51,.92),rgba(7,18,37,.92));border:1px solid var(--border);border-radius:28px;padding:26px;box-shadow:0 30px 90px rgba(0,0,0,.35),inset 0 0 60px rgba(0,245,212,.035)}.card-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:20px;font-family:var(--mono);font-size:.75rem;color:var(--muted)}.drop{border:2px dashed var(--border);border-radius:22px;padding:36px 20px;text-align:center;background:rgba(16,33,61,.6);cursor:pointer;transition:.25s}.drop:hover,.drop.drag{border-color:var(--cyan);background:rgba(0,245,212,.08)}.drop-icon{font-size:3rem;display:block;margin-bottom:10px}.drop input{display:none}.file-chip{display:none;margin-top:16px;padding:14px;border:1px solid var(--cyan);border-radius:16px;background:rgba(0,245,212,.07);font-family:var(--mono);font-size:.8rem;word-break:break-word}.file-chip.show{display:block}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.field{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:14px}.field label{display:block;font-family:var(--mono);font-size:.68rem;color:var(--muted);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase}.field select,.field input{width:100%;background:#071225;border:1px solid var(--border);border-radius:10px;color:var(--white);padding:11px;font-family:var(--mono);outline:none}.progress{height:8px;background:#06152b;border-radius:99px;margin-top:18px;overflow:hidden}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:.4s}.console{margin-top:18px;background:#030914;border:1px solid var(--border);border-radius:16px;padding:14px;font-family:var(--mono);font-size:.74rem;min-height:90px;color:var(--muted);line-height:1.7}.ok{color:var(--green)}.warn{color:var(--orange)}.features{padding:50px 7vw}.section-title{font-family:var(--mono);color:var(--cyan);letter-spacing:3px;font-size:.78rem;text-transform:uppercase;margin-bottom:10px}.section-heading{font-size:clamp(2rem,4vw,3.2rem);line-height:1;margin-bottom:26px}.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.feature{background:rgba(11,27,51,.72);border:1px solid var(--border);border-radius:24px;padding:24px;min-height:180px}.feature:hover{border-color:var(--cyan);transform:translateY(-3px);transition:.25s}.feature .ico{font-size:2rem;margin-bottom:12px}.feature h3{margin-bottom:8px}.feature p{color:var(--muted);line-height:1.65;font-size:.92rem}.receive{display:none;margin-top:22px;border-top:1px solid var(--border);padding-top:20px}.receive.show{display:block}.result{display:none;margin-top:16px;padding:16px;border-radius:16px;border:1px solid var(--green);background:rgba(0,230,118,.08);font-family:var(--mono);font-size:.82rem}.result.show{display:block}.footer{padding:30px 7vw;color:var(--muted);font-family:var(--mono);font-size:.75rem;border-top:1px solid var(--border)}@media(max-width:900px){.hero{grid-template-columns:1fr;padding-top:44px}.feature-grid,.stats,.grid2{grid-template-columns:1fr}.nav{padding:0 20px}.navlinks{display:none}h1{letter-spacing:-2px}}
+.auth-page{
+  padding:80px 7vw;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.auth-card{
+  width:100%;
+  max-width:420px;
+  background:rgba(11,27,51,.82);
+  border:1px solid var(--border);
+  border-radius:28px;
+  padding:34px;
+  box-shadow:0 30px 90px rgba(0,0,0,.35);
+}
+
+.auth-card h2{
+  font-size:2rem;
+  margin-bottom:8px;
+}
+
+.auth-card p{
+  color:var(--muted);
+  margin-bottom:24px;
+}
+
+.auth-card input{
+  width:100%;
+  margin-bottom:14px;
+  padding:14px 16px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#061120;
+  color:var(--white);
+  outline:none;
+}
+
+.auth-card input:focus{
+  border-color:var(--cyan);
+}
+
+.auth-card button{
+  width:100%;
+  padding:14px;
+  border:0;
+  border-radius:16px;
+  background:linear-gradient(90deg,#00e5cc,#00b8a0);
+  color:#001018;
+  font-weight:800;
+  cursor:pointer;
+}
+.auth-msg{margin-top:12px;padding:10px;border-radius:10px;font-size:.85rem;display:none}
+.auth-msg.ok{display:block;background:rgba(0,230,118,.12);border:1px solid var(--green);color:var(--green)}
+.auth-msg.err{display:block;background:rgba(255,77,109,.12);border:1px solid var(--danger);color:var(--danger)}
+.user-bar{display:none;padding:10px 7vw;background:rgba(0,245,212,.06);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.8rem;color:var(--cyan);align-items:center;justify-content:space-between}
+.user-bar.show{display:flex}
+.user-bar button{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:var(--mono);font-size:.75rem}
+.user-bar button:hover{border-color:var(--cyan);color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <div class="brand">
+      <div class="logo" aria-label="RaazVault logo">
+  <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L20 7V17L12 22L4 17V7L12 2Z" stroke="#00e5cc" stroke-width="1.8"/>
+    <path d="M8 11V9a4 4 0 118 0v2" stroke="#00e5cc" stroke-width="1.8"/>
+    <rect x="7" y="11" width="10" height="7" rx="2" stroke="#00e5cc" stroke-width="1.8"/>
+  </svg>
+</div>
+      <b>Raaz<span>Vault</span></b>
+    </div>
+    <div class="navlinks">
+  <a href="#features">Contact sales</a>
+  <a href="#receiveBox">Get app</a>
+  <a href="#signup">Sign up</a>
+  <a href="#login">Log in</a>
+  <a href="#send" class="get-started">Get started</a>
+</div>
+  </nav>
+<div class="user-bar" id="userBar"><span id="userGreeting"></span><button onclick="doLogout()">Logout</button></div>
+<section class="auth-page" id="signup">
+  <div class="auth-card">
+    <h2>Create account</h2>
+    <p>Join RaazVault and start secure file sharing.</p>
+
+    <input type="text" id="signupName" placeholder="Full name">
+    <input type="email" id="signupEmail" placeholder="Email address">
+    <input type="password" id="signupPass" placeholder="Create password">
+
+    <button onclick="doSignup()">Sign up</button>
+    <div class="auth-msg" id="signupMsg"></div>
+  </div>
+</section>
+
+<section class="auth-page" id="login">
+  <div class="auth-card">
+    <h2>Welcome back</h2>
+    <p>Login to access your secure vault.</p>
+
+    <input type="email" id="loginEmail" placeholder="Email address">
+    <input type="password" id="loginPass" placeholder="Password">
+
+    <button onclick="doLogin()">Log in</button>
+    <div class="auth-msg" id="loginMsg"></div>
+  </div>
+</section>
+  <section class="hero">
+    <div>
+      <div class="badge"><span class="pulse"></span> ZERO-KNOWLEDGE FILE SHARING</div>
+      <h1>Protect your <span class="grad">Raaz</span>.<br>Share like a ghost.</h1>
+      <p class="lead">RaazVault encrypts files inside your browser using AES-256-GCM before they touch the server. The server stores only encrypted data, while your secret key stays with you.</p>
+      <div class="hero-actions"><a class="btn" href="#send">🔐 Encrypt a file</a><a class="btn secondary" href="#features">See architecture</a></div>
+      <div class="stats"><div class="mini"><strong>AES-256</strong><span>CLIENT-SIDE CRYPTO</span></div><div class="mini"><strong>0 Plaintext</strong><span>SERVER VISIBILITY</span></div><div class="mini"><strong>Auto-Kill</strong><span>EXPIRY + VIEW LIMIT</span></div></div>
+    </div>
+
+    <div class="vault-card" id="send">
+      <div class="card-head"><span>⬡ RAAZVAULT SECURE CONSOLE</span><span id="clock">--:--:--</span></div>
+      <label class="drop" id="drop">
+        <span class="drop-icon">🗃️</span>
+        <h2>Drop your secret file</h2>
+        <p style="color:var(--muted);margin-top:8px">Any file type · encrypted locally · max 50 MB</p>
+        <input id="file" type="file" />
+      </label>
+      <div class="file-chip" id="fileChip"></div>
+      <div class="grid2">
+        <div class="field"><label>Auto destruct</label><select id="ttl">
+  <option value="60">After 1 minute</option>
+  <option value="300">After 5 minutes</option>
+  <option value="600">After 10 minutes</option>
+  <option value="1800">After 30 minutes</option>
+  <option value="3600">After 1 hour</option>
+  <option value="7200">After 2 hours</option>
+  <option value="86400">After 1 day</option>
+  <option value="172800">After 2 days</option>
+  <option value="432000">After 5 days</option>
+  <option value="1296000">After 15 days</option>
+</select></div>
+        <div class="field"><label>View limit</label><select id="views">
+  <option value="1">1 view</option>
+  <option value="2">2 views</option>
+  <option value="3">3 views</option>
+  <option value="999999">Infinite</option>
+</select></div>
+        <div class="field" style="grid-column:1/-1"><label>Password layer optional</label><input id="password" type="password" placeholder="Add password to strengthen key derivation" /></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:16px" id="encryptBtn">🔐 Encrypt & Create Raaz Link</button>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="console" id="log">[idle] Waiting for file...</div>
+
+      <div class="receive" id="receiveBox">
+        <div class="section-title">// RECEIVE</div>
+        <div class="field"><label>Raaz link</label><input id="raazLink" placeholder="Paste generated link here" /></div>
+        <div class="field" style="margin-top:12px"><label>Password if used</label><input id="receivePassword" type="password" placeholder="Optional password" /></div>
+        <button class="btn secondary" style="width:100%;margin-top:14px" id="decryptBtn">🔓 Decrypt & Download</button>
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="feature-grid">
+      <div class="feature"><div class="ico">🛡️</div><h3>Hex Shield Brand</h3><p>Custom RaazVault identity with a hexagonal shield logo to match the cybersecurity and encryption theme.</p></div>
+      <div class="feature"><div class="ico">🔐</div><h3>Real AES-GCM</h3><p>The file is encrypted using the browser Web Crypto API. IV and key material are generated locally.</p></div>
+      <div class="feature"><div class="ico">👻</div><h3>Zero Knowledge</h3><p>The backend never receives the decryption key. The key is stored only in the URL fragment after #.</p></div>
+      <div class="feature"><div class="ico">💣</div><h3>Self Destruct</h3><p>The Node.js backend removes files after expiry or after the view limit is consumed.</p></div>
+      <div class="feature"><div class="ico">⚙️</div><h3>Express Backend</h3><p>Simple API endpoints for upload, metadata, encrypted file download, and cleanup scheduling.</p></div>
+      <div class="feature"><div class="ico">🚀</div><h3>Deploy Ready</h3><p>Can be pushed to GitHub and hosted on Render as a full-stack Node.js application.</p></div>
+    
+<script>
+const $ = id => document.getElementById(id);
+let selectedFile = null;
+const log = (m,c='') => $('log').innerHTML += `<br><span class="${c}">[${new Date().toLocaleTimeString('en-GB')}] ${m}</span>`;
+setInterval(()=> $('clock').textContent = new Date().toLocaleTimeString('en-GB'),1000);
+$('file').addEventListener('change', e => setFile(e.target.files[0]));
+['dragover','dragleave','drop'].forEach(evt => $('drop').addEventListener(evt, e => {e.preventDefault(); if(evt==='dragover') $('drop').classList.add('drag'); else $('drop').classList.remove('drag'); if(evt==='drop' && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);}));
+function setFile(f){ selectedFile=f; $('fileChip').classList.add('show'); $('fileChip').textContent = `${f.name} · ${(f.size/1024/1024).toFixed(2)} MB · ${f.type || 'unknown'}`; $('log').innerHTML='[ready] File loaded. Real encryption will run in browser.'; }
+function b64(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')}
+function fromB64(str){str=str.replaceAll('-','+').replaceAll('_','/'); while(str.length%4) str+='='; return Uint8Array.from(atob(str), c=>c.charCodeAt(0));}
+async function deriveKey(password, salt){ const enc=new TextEncoder(); const base=await crypto.subtle.importKey('raw', enc.encode(password || crypto.randomUUID()), 'PBKDF2', false, ['deriveKey']); return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'}, base, {name:'AES-GCM',length:256}, true, ['encrypt','decrypt']); }
+async function exportRawKey(key){ return b64(await crypto.subtle.exportKey('raw', key)); }
+async function importRawKey(raw){ return crypto.subtle.importKey('raw', fromB64(raw), 'AES-GCM', false, ['decrypt']); }
+$('encryptBtn').onclick = async () => {
+  if(!selectedFile) return alert('Please select a file first.');
+  try{
+    $('bar').style.width='10%'; log('Generating AES-256 key...', 'ok');
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const password = $('password').value.trim();
+    const key = password ? await deriveKey(password, salt) : await crypto.subtle.generateKey({name:'AES-GCM',length:256}, true, ['encrypt','decrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    $('bar').style.width='35%'; log('Encrypting file locally with AES-GCM...', 'ok');
+    const plain = await selectedFile.arrayBuffer();
+    const cipher = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, plain);
+    $('bar').style.width='62%'; log('Uploading encrypted blob only. No plaintext leaves device.', 'warn');
+    const fd = new FormData();
+    fd.append('file', new Blob([cipher], {type:'application/octet-stream'}), selectedFile.name + '.raaz');
+    fd.append('originalName', selectedFile.name); fd.append('mime', selectedFile.type || 'application/octet-stream'); fd.append('originalSize', selectedFile.size);
+    fd.append('iv', b64(iv)); fd.append('salt', password ? b64(salt) : ''); fd.append('ttlSeconds', $('ttl').value); fd.append('maxViews', $('views').value);
+    const res = await fetch('/api/upload', {method:'POST', body:fd}); const data = await res.json(); if(!data.ok) throw new Error(data.error || 'Upload failed');
+    const keyPart = password ? 'password' : await exportRawKey(key);
+    const url = `${location.origin}${location.pathname}#raaz=${data.id}&key=${encodeURIComponent(keyPart)}`;
+    $('bar').style.width='100%'; log('Raaz link created. Copy it now:', 'ok'); log(`<input style="width:100%;padding:9px;background:#071225;color:#00f5d4;border:1px solid #00f5d4;border-radius:8px" value="${url}" onclick="this.select();navigator.clipboard.writeText(this.value)" readonly>`, 'ok');
+    $('receiveBox').classList.add('show'); $('raazLink').value=url;
+  }catch(e){ log('Error: '+e.message, 'warn'); }
+};
+$('decryptBtn').onclick = async () => {
+  try{
+    const input = $('raazLink').value.trim(); const hash = input.includes('#') ? input.split('#')[1] : location.hash.slice(1);
+    const params = new URLSearchParams(hash); const id = params.get('raaz'); const keyStr = params.get('key');
+    if(!id || !keyStr) throw new Error('Invalid Raaz link.');
+    const meta = await (await fetch(`/api/file/${id}/meta`)).json(); if(!meta.ok) throw new Error(meta.error);
+    const encrypted = await (await fetch(`/api/file/${id}/download`)).arrayBuffer();
+    const key = keyStr === 'password' ? await deriveKey($('receivePassword').value.trim(), fromB64(meta.salt)) : await importRawKey(decodeURIComponent(keyStr));
+    const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv: fromB64(meta.iv)}, key, encrypted);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([plain], {type:meta.mime})); a.download = meta.originalName; a.click();
+    $('result').classList.add('show'); $('result').innerHTML = `✓ Decrypted and downloaded: <b>${meta.originalName}</b><br>Views left after this may be reduced.`;
+  }catch(e){ $('result').classList.add('show'); $('result').innerHTML = `✕ ${e.message}. Wrong password/key or expired file.`; }
+};
+if(location.hash.includes('raaz=')){ $('receiveBox').classList.add('show'); $('raazLink').value = location.href; location.href='#receiveBox'; }
+
+// ─── AUTH FUNCTIONS ───
+async function doSignup(){
+  const name=$('signupName').value.trim(), email=$('signupEmail').value.trim(), password=$('signupPass').value;
+  const msg=$('signupMsg');
+  if(!name||!email||!password){msg.className='auth-msg err';msg.textContent='All fields required.';return;}
+  try{
+    const r=await(await fetch('/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})})).json();
+    if(r.ok){msg.className='auth-msg ok';msg.textContent='Account created! Welcome, '+r.user.name;showUser(r.user);}
+    else{msg.className='auth-msg err';msg.textContent=r.error;}
+  }catch(e){msg.className='auth-msg err';msg.textContent='Network error.';}
+}
+async function doLogin(){
+  const email=$('loginEmail').value.trim(), password=$('loginPass').value;
+  const msg=$('loginMsg');
+  if(!email||!password){msg.className='auth-msg err';msg.textContent='All fields required.';return;}
+  try{
+    const r=await(await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})})).json();
+    if(r.ok){msg.className='auth-msg ok';msg.textContent='Welcome back, '+r.user.name+'!';showUser(r.user);}
+    else{msg.className='auth-msg err';msg.textContent=r.error;}
+  }catch(e){msg.className='auth-msg err';msg.textContent='Network error.';}
+}
+async function doLogout(){
+  await fetch('/api/auth/logout',{method:'POST'});
+  $('userBar').classList.remove('show');
+  $('userGreeting').textContent='';
+}
+function showUser(u){
+  $('userBar').classList.add('show');
+  $('userGreeting').textContent='🔐 Logged in as '+u.name+' ('+u.email+')';
+}
+// Check if already logged in
+fetch('/api/auth/me').then(r=>r.json()).then(r=>{if(r.ok)showUser(r.user);}).catch(()=>{});
+</script>
+</body>
+</html>

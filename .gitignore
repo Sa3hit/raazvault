@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Uploaded encrypted files (ephemeral by design)
+uploads/
+
+# User database (recreated on server start)
+users.json
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
