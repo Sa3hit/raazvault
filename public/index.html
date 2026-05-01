@@ -92,6 +92,27 @@
 .user-bar.show{display:flex}
 .user-bar button{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:var(--mono);font-size:.75rem}
 .user-bar button:hover{border-color:var(--cyan);color:var(--cyan)}
+/* P2P Styles */
+.mode-tabs{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.mode-tab{flex:1;padding:14px;text-align:center;font-family:var(--mono);font-size:.82rem;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);border:none;transition:.2s}
+.mode-tab.active{background:linear-gradient(90deg,rgba(0,245,212,.15),rgba(0,245,212,.05));color:var(--cyan);box-shadow:inset 0 -2px 0 var(--cyan)}
+.mode-tab:hover:not(.active){background:rgba(0,245,212,.05)}
+.p2p-section{display:none}
+.p2p-section.show{display:block}
+.raaz-section{display:block}
+.raaz-section.hide{display:none}
+#p2pCodeBox{display:none;text-align:center;padding:24px;margin-top:16px;border:1px solid var(--cyan);border-radius:20px;background:rgba(0,245,212,.06)}
+#p2pCodeBox .code-digits{font-family:var(--mono);font-size:2.4rem;letter-spacing:12px;color:var(--cyan);text-shadow:0 0 20px rgba(0,245,212,.5);margin:12px 0}
+#p2pCodeBox .code-label{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px}
+.p2p-copy{margin-top:12px;padding:8px 20px;background:var(--cyan);color:#03101c;border:none;border-radius:10px;font-family:var(--mono);font-weight:700;cursor:pointer;font-size:.8rem}
+#p2pJoinBox{display:none;margin-top:16px}
+#p2pActions{display:flex;gap:12px;margin-top:16px}
+#p2pActions button{flex:1}
+#p2pFileSection{display:none;margin-top:16px}
+.p2p-drop{border:2px dashed var(--border);border-radius:18px;padding:28px 16px;text-align:center;background:rgba(16,33,61,.6);cursor:pointer;transition:.25s}
+.p2p-drop:hover{border-color:var(--cyan);background:rgba(0,245,212,.08)}
+#p2pStatus{font-family:var(--mono);font-size:.82rem;color:var(--cyan);margin-top:14px;min-height:22px}
+#p2pProgress{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-top:4px}
 </style>
 </head>
 <body>
@@ -147,12 +168,21 @@
       <div class="badge"><span class="pulse"></span> ZERO-KNOWLEDGE FILE SHARING</div>
       <h1>Protect your <span class="grad">Raaz</span>.<br>Share like a ghost.</h1>
       <p class="lead">RaazVault encrypts files inside your browser using AES-256-GCM before they touch the server. The server stores only encrypted data, while your secret key stays with you.</p>
-      <div class="hero-actions"><a class="btn" href="#send">🔐 Encrypt a file</a><a class="btn secondary" href="#features">See architecture</a></div>
+      <div class="hero-actions"><a class="btn" href="#send">🔐 Encrypt a file</a><a class="btn secondary" onclick="switchMode('p2p');return false" href="#send">⚡ P2P Transfer</a></div>
       <div class="stats"><div class="mini"><strong>AES-256</strong><span>CLIENT-SIDE CRYPTO</span></div><div class="mini"><strong>0 Plaintext</strong><span>SERVER VISIBILITY</span></div><div class="mini"><strong>Auto-Kill</strong><span>EXPIRY + VIEW LIMIT</span></div></div>
     </div>
 
     <div class="vault-card" id="send">
       <div class="card-head"><span>⬡ RAAZVAULT SECURE CONSOLE</span><span id="clock">--:--:--</span></div>
+
+      <!-- Mode Tabs -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tabRaaz" onclick="switchMode('raaz')">🔗 Raaz Link</button>
+        <button class="mode-tab" id="tabP2P" onclick="switchMode('p2p')">⚡ P2P Transfer</button>
+      </div>
+
+      <!-- ═══ RAAZ LINK MODE ═══ -->
+      <div class="raaz-section" id="raazSection">
       <label class="drop" id="drop">
         <span class="drop-icon">🗃️</span>
         <h2>Drop your secret file</h2>
@@ -192,12 +222,52 @@
         <button class="btn secondary" style="width:100%;margin-top:14px" id="decryptBtn">🔓 Decrypt & Download</button>
         <div class="result" id="result"></div>
       </div>
+      </div>
+
+      <!-- ═══ P2P TRANSFER MODE ═══ -->
+      <div class="p2p-section" id="p2pSection">
+        <div style="text-align:center;padding:8px 0 4px">
+          <span style="font-family:var(--mono);font-size:.72rem;color:var(--muted);letter-spacing:2px">DIRECT DEVICE-TO-DEVICE · NO SIZE LIMIT · ZERO SERVER STORAGE</span>
+        </div>
+
+        <div id="p2pActions">
+          <button class="btn" onclick="P2P.createRoom()" style="flex:1">📡 Create Room (Send)</button>
+          <button class="btn secondary" onclick="document.getElementById('p2pJoinBox').style.display='block';this.parentElement.style.display='none'" style="flex:1">📥 Join Room (Receive)</button>
+        </div>
+
+        <div id="p2pCodeBox">
+          <div class="code-label">Your Room Code</div>
+          <div class="code-digits" id="p2pCode">------</div>
+          <div class="code-label">Share this code with the receiver</div>
+          <button class="p2p-copy" onclick="navigator.clipboard.writeText(document.getElementById('p2pCode').textContent.replace(/\s/g,''));this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Code',1500)">Copy Code</button>
+        </div>
+
+        <div id="p2pJoinBox">
+          <div class="field"><label>Enter 6-digit room code</label><input id="p2pJoinInput" type="text" maxlength="6" placeholder="e.g. 472918" style="text-align:center;font-size:1.3rem;letter-spacing:8px" /></div>
+          <button class="btn" style="width:100%;margin-top:12px" onclick="P2P.joinRoom(document.getElementById('p2pJoinInput').value)">🔗 Connect to Peer</button>
+        </div>
+
+        <div id="p2pFileSection">
+          <label class="p2p-drop" id="p2pDrop">
+            <span style="font-size:2.5rem;display:block;margin-bottom:8px">📁</span>
+            <h3>Select file to send</h3>
+            <p style="color:var(--muted);margin-top:6px;font-size:.88rem">Any file type · any size · direct P2P</p>
+            <input id="p2pFile" type="file" style="display:none" />
+          </label>
+        </div>
+
+        <div id="p2pStatus" style="margin-top:14px"></div>
+        <div id="p2pProgress"></div>
+        <div class="progress" style="margin-top:8px"><div class="bar" id="p2pBar"></div></div>
+        <div class="console" id="p2pLog">[idle] Select a mode to begin...</div>
+      </div>
+
     </div>
   </section>
 
   <section class="features" id="features">
     <div class="feature-grid">
-      <div class="feature"><div class="ico">🛡️</div><h3>Hex Shield Brand</h3><p>Custom RaazVault identity with a hexagonal shield logo to match the cybersecurity and encryption theme.</p></div>
+      <div class="feature"><div class="ico">⚡</div><h3>P2P Transfer</h3><p>WebRTC peer-to-peer file transfer with no size limit. Files go directly between devices — server never touches them.</p></div>
       <div class="feature"><div class="ico">🔐</div><h3>Real AES-GCM</h3><p>The file is encrypted using the browser Web Crypto API. IV and key material are generated locally.</p></div>
       <div class="feature"><div class="ico">👻</div><h3>Zero Knowledge</h3><p>The backend never receives the decryption key. The key is stored only in the URL fragment after #.</p></div>
       <div class="feature"><div class="ico">💣</div><h3>Self Destruct</h3><p>The Node.js backend removes files after expiry or after the view limit is consumed.</p></div>
@@ -287,6 +357,44 @@ function showUser(u){
 }
 // Check if already logged in
 fetch('/api/auth/me').then(r=>r.json()).then(r=>{if(r.ok)showUser(r.user);}).catch(()=>{});
+
+// ─── MODE SWITCHING (Raaz Link ↔ P2P) ───
+function switchMode(mode) {
+  const raaz = $('raazSection');
+  const p2p = $('p2pSection');
+  const tabRaaz = $('tabRaaz');
+  const tabP2P = $('tabP2P');
+  if (mode === 'p2p') {
+    raaz.classList.add('hide');
+    p2p.classList.add('show');
+    tabRaaz.classList.remove('active');
+    tabP2P.classList.add('active');
+  } else {
+    raaz.classList.remove('hide');
+    p2p.classList.remove('show');
+    tabRaaz.classList.add('active');
+    tabP2P.classList.remove('active');
+  }
+  document.getElementById('send').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── P2P FILE INPUT ───
+const p2pDrop = $('p2pDrop');
+const p2pFileInput = $('p2pFile');
+if (p2pDrop) {
+  p2pDrop.addEventListener('click', () => p2pFileInput.click());
+  p2pFileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) P2P.sendFile(e.target.files[0]);
+  });
+  ['dragover','dragleave','drop'].forEach(evt => p2pDrop.addEventListener(evt, e => {
+    e.preventDefault();
+    if (evt === 'dragover') p2pDrop.style.borderColor = 'var(--cyan)';
+    else p2pDrop.style.borderColor = '';
+    if (evt === 'drop' && e.dataTransfer.files[0]) P2P.sendFile(e.dataTransfer.files[0]);
+  }));
+}
 </script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/p2p.js"></script>
 </body>
 </html>

@@ -32,6 +32,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const express = require('express');
+const http = require('http');
+const { Server: SocketIO } = require('socket.io');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const helmet = require('helmet');
@@ -54,8 +56,10 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB limit (free tier friendly)
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]');
 
-// ─── CREATE EXPRESS APP ──────────────────────────────────────────────────────
+// ─── CREATE EXPRESS APP + HTTP SERVER ────────────────────────────────────────
 const app = express();
+const server = http.createServer(app);
+const io = new SocketIO(server, { cors: { origin: '*' } });
 
 // Trust proxy — required when behind Render's reverse proxy (for rate limiting, secure cookies)
 if (IS_PRODUCTION) app.set('trust proxy', 1);
@@ -487,11 +491,106 @@ app.get('/api/stats', (_req, res) => {
 });
 
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  P2P SIGNALING SERVER (WebRTC via Socket.IO)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+//  HOW P2P WORKS:
+//  ──────────────
+//  1. Sender creates a room → gets a 6-digit code
+//  2. Receiver joins with the code
+//  3. Server relays WebRTC signaling messages (SDP offers/answers, ICE candidates)
+//  4. Once WebRTC DataChannel connects, files stream DIRECTLY between browsers
+//  5. Server NEVER sees the files — only helps the two browsers find each other
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const p2pRooms = new Map(); // roomCode → { sender: socketId, receiver: socketId }
+
+io.on('connection', (socket) => {
+  console.log(`[P2P] Client connected: ${socket.id}`);
+
+  // ─── CREATE ROOM ─────────────────────────────────────────────────────────
+  socket.on('create-room', (callback) => {
+    // Generate a 6-digit room code
+    let code;
+    do {
+      code = Math.floor(100000 + Math.random() * 900000).toString();
+    } while (p2pRooms.has(code));
+
+    p2pRooms.set(code, { sender: socket.id, receiver: null });
+    socket.join(code);
+    socket.p2pRoom = code;
+    socket.p2pRole = 'sender';
+
+    console.log(`[P2P] Room ${code} created by ${socket.id}`);
+    callback({ ok: true, code });
+  });
+
+  // ─── JOIN ROOM ───────────────────────────────────────────────────────────
+  socket.on('join-room', (code, callback) => {
+    const room = p2pRooms.get(code);
+    if (!room) {
+      return callback({ ok: false, error: 'Room not found. Check the code.' });
+    }
+    if (room.receiver) {
+      return callback({ ok: false, error: 'Room is full.' });
+    }
+
+    room.receiver = socket.id;
+    socket.join(code);
+    socket.p2pRoom = code;
+    socket.p2pRole = 'receiver';
+
+    console.log(`[P2P] ${socket.id} joined room ${code}`);
+    callback({ ok: true });
+
+    // Notify the sender that receiver has joined → sender should create WebRTC offer
+    socket.to(code).emit('peer-joined');
+  });
+
+  // ─── RELAY WEBRTC SIGNALING ──────────────────────────────────────────────
+  // These messages are forwarded between peers to establish the WebRTC connection
+  socket.on('signal', (data) => {
+    if (socket.p2pRoom) {
+      socket.to(socket.p2pRoom).emit('signal', data);
+    }
+  });
+
+  // ─── DISCONNECT CLEANUP ──────────────────────────────────────────────────
+  socket.on('disconnect', () => {
+    console.log(`[P2P] Client disconnected: ${socket.id}`);
+    if (socket.p2pRoom) {
+      socket.to(socket.p2pRoom).emit('peer-left');
+      // If sender disconnects, destroy the room
+      if (socket.p2pRole === 'sender') {
+        p2pRooms.delete(socket.p2pRoom);
+        console.log(`[P2P] Room ${socket.p2pRoom} destroyed (sender left)`);
+      } else {
+        // If receiver disconnects, allow new receiver
+        const room = p2pRooms.get(socket.p2pRoom);
+        if (room) room.receiver = null;
+      }
+    }
+  });
+});
+
+// Clean up stale rooms every 5 minutes
+setInterval(() => {
+  const sockets = io.sockets.sockets;
+  for (const [code, room] of p2pRooms) {
+    const senderAlive = sockets.has(room.sender);
+    if (!senderAlive) {
+      p2pRooms.delete(code);
+      console.log(`[P2P] Stale room ${code} cleaned up`);
+    }
+  }
+}, 5 * 60 * 1000);
+
+
 // ─── START SERVER ─────────────────────────────────────────────────────────────
-// '0.0.0.0' means listen on ALL network interfaces (localhost + WiFi + LAN)
-// This is required for other devices on the same network to connect
-app.listen(PORT, '0.0.0.0', () => {
-  // Get local network IP address
+// Using http server (not app.listen) so Socket.IO can share the same port
+server.listen(PORT, '0.0.0.0', () => {
   const os = require('os');
   const nets = os.networkInterfaces();
   let localIP = '<your-ip>';
@@ -510,7 +609,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  ║   PC:     http://localhost:${PORT}                         ║`);
   console.log(`  ║   Phone:  http://${localIP}:${PORT}                      ║`);
   console.log('  ║                                                          ║');
-  console.log('  ║   Zero-knowledge encrypted file sharing is LIVE.         ║');
+  console.log('  ║   ⚡ P2P Transfer + 🔗 Raaz Links — both LIVE            ║');
   console.log('  ║   The server never sees your plaintext files.            ║');
   console.log('  ║                                                          ║');
   console.log('  ╚══════════════════════════════════════════════════════════╝');
