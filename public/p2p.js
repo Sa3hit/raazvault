@@ -244,6 +244,11 @@ const P2P = (() => {
         p2pLog(`Room created: ${res.code}`, 'ok');
         setStatus('⏳ Waiting for peer to join...');
         $('p2pCode').textContent = res.code.split('').join('  ');
+        
+        const p2pLink = `${location.origin}${location.pathname}#join=${res.code}`;
+        p2pLog('P2P Link created. Share this link for 1-click join:', 'ok');
+        p2pLog(`<input style="width:100%;padding:9px;background:#071225;color:#00f5d4;border:1px solid #00f5d4;border-radius:8px;cursor:pointer;" value="${p2pLink}" onclick="this.select();navigator.clipboard.writeText(this.value);alert('Copied to clipboard!')" readonly>`, 'ok');
+        
         $('p2pCodeBox').style.display = 'block';
         $('p2pJoinBox').style.display = 'none';
         $('p2pActions').style.display = 'none';

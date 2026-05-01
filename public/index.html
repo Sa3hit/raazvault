@@ -378,6 +378,17 @@ function switchMode(mode) {
   document.getElementById('send').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ─── P2P AUTO-JOIN FROM LINK ───
+if(location.hash.includes('join=')){ 
+  const code = location.hash.split('join=')[1];
+  switchMode('p2p');
+  $('p2pJoinInput').value = code;
+  $('p2pJoinBox').style.display='block';
+  $('p2pActions').style.display='none';
+  // Wait a tiny bit for scripts to initialize before joining
+  setTimeout(() => P2P.joinRoom(code), 300);
+}
+
 // ─── P2P FILE INPUT ───
 const p2pDrop = $('p2pDrop');
 const p2pFileInput = $('p2pFile');
