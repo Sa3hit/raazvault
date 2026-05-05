@@ -24,6 +24,7 @@ const P2P = (() => {
   let dc = null; // RTCDataChannel
   let role = null; // 'sender' or 'receiver'
   let roomCode = null;
+  let iceCandidateQueue = [];
 
   // Receive state
   let recvMeta = null;
@@ -76,13 +77,24 @@ const P2P = (() => {
         try {
           if (data.type === 'offer') {
             await pc.setRemoteDescription(new RTCSessionDescription(data));
+            while (iceCandidateQueue.length > 0) {
+              await pc.addIceCandidate(iceCandidateQueue.shift());
+            }
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             socket.emit('signal', pc.localDescription);
           } else if (data.type === 'answer') {
             await pc.setRemoteDescription(new RTCSessionDescription(data));
+            while (iceCandidateQueue.length > 0) {
+              await pc.addIceCandidate(iceCandidateQueue.shift());
+            }
           } else if (data.candidate) {
-            await pc.addIceCandidate(new RTCIceCandidate(data));
+            const candidate = new RTCIceCandidate(data);
+            if (pc.remoteDescription && pc.remoteDescription.type) {
+              await pc.addIceCandidate(candidate);
+            } else {
+              iceCandidateQueue.push(candidate);
+            }
           }
         } catch (e) {
           p2pLog('Signal error: ' + e.message, 'warn');
@@ -93,6 +105,7 @@ const P2P = (() => {
 
   // ─── CREATE WEBRTC PEER CONNECTION ─────────────────────────────────────
   function createPeerConnection() {
+    iceCandidateQueue = [];
     pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     pc.onicecandidate = (e) => {
