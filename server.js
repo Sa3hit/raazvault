@@ -52,7 +52,7 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');       // Where encrypted bl
 const USERS_FILE = path.join(__dirname, 'users.json');     // Simple JSON-based user storage
 const JWT_SECRET = process.env.JWT_SECRET || 'raazvault-local-dev-secret-key-2026';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB limit (free tier friendly)
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '560039848608-fupo5gb88ke3ugq7u4p2nu0usou0j8g6.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // ─── ENSURE DIRECTORIES AND FILES EXIST ──────────────────────────────────────
