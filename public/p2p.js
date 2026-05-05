@@ -95,6 +95,15 @@ const P2P = (() => {
         resolve();
       });
 
+      socket.on('connect_error', (err) => {
+        p2pLog('Signaling connection failed. Check your internet/VPN.', 'warn');
+        console.error('Socket.io error:', err);
+      });
+
+      socket.on('connect_timeout', () => {
+        p2pLog('Signaling connection timed out.', 'warn');
+      });
+
       socket.on('peer-joined', async () => {
         p2pLog('Peer detected! Preparing handshake...', 'ok');
         setStatus('⚡ Peer connected — establishing tunnel...');
