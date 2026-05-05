@@ -51,11 +51,38 @@ const P2P = (() => {
     if (info) info.textContent = speed ? `${pct}% · ${speed}` : `${pct}%`;
   }
 
-  function showRadar(show) {
+  function showRadar(show, userInitials = '??') {
     const r = $('p2pRadar'), rt = $('p2pRadarText');
+    const uDot = $('radarUserDot'), pDot = $('radarPeerDot');
     if (r && rt) {
-      if (show) { r.classList.add('active'); rt.classList.add('active'); }
-      else { r.classList.remove('active'); rt.classList.remove('active'); }
+      if (show) { 
+        r.classList.add('active'); 
+        rt.classList.add('active'); 
+        if (uDot) {
+          uDot.style.display = 'flex';
+          uDot.textContent = userInitials;
+        }
+      }
+      else { 
+        r.classList.remove('active'); 
+        rt.classList.remove('active'); 
+        if (uDot) uDot.style.display = 'none';
+        if (pDot) pDot.style.display = 'none';
+      }
+    }
+  }
+
+  function showPeerOnRadar(peerInitials = 'P') {
+    const pDot = $('radarPeerDot');
+    if (pDot) {
+      pDot.style.display = 'flex';
+      pDot.textContent = peerInitials;
+      // Random position on the radar outer ring
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 100; // 260px container / 2 - padding
+      pDot.style.left = `calc(50% + ${Math.cos(angle) * radius}px)`;
+      pDot.style.top = `calc(50% + ${Math.sin(angle) * radius}px)`;
+      pDot.style.transform = 'translate(-50%, -50%)';
     }
   }
 
@@ -72,6 +99,7 @@ const P2P = (() => {
       socket.on('peer-joined', () => {
         p2pLog('Peer connected! Setting up encrypted tunnel...', 'ok');
         setStatus('⚡ Peer connected — establishing tunnel...');
+        showPeerOnRadar('P'); // Show peer dot
         createOffer();
       });
 
@@ -272,7 +300,8 @@ const P2P = (() => {
 
     socket.emit('create-room', (res) => {
       if (res.ok) {
-        showRadar(true);
+        const initials = window.currentUser ? getInitials(window.currentUser.name) : '??';
+        showRadar(true, initials);
         roomCode = res.code;
         p2pLog(`Room created: ${res.code}`, 'ok');
         setStatus('⏳ Waiting for peer to join...');
@@ -299,7 +328,8 @@ const P2P = (() => {
 
     socket.emit('join-room', code.trim(), (res) => {
       if (res.ok) {
-        showRadar(true);
+        const initials = window.currentUser ? getInitials(window.currentUser.name) : '??';
+        showRadar(true, initials);
         roomCode = code.trim();
         p2pLog(`Joined room: ${code}`, 'ok');
         setStatus('⚡ Connecting to peer...');
@@ -326,6 +356,13 @@ const P2P = (() => {
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
     return (bytes / 1073741824).toFixed(2) + ' GB';
+  }
+
+  function getInitials(name) {
+    if (!name) return '??';
+    const names = name.trim().split(/\s+/);
+    if (names.length > 1) return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    return names[0].substring(0, 2).toUpperCase();
   }
 
   // ─── PUBLIC API ────────────────────────────────────────────────────────
