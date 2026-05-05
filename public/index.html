@@ -833,7 +833,13 @@ async function doSignup(){
   if(!name||!email||!password){msg.className='auth-msg err';msg.textContent='All fields required.';return;}
   try{
     const r=await(await fetch('/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})})).json();
-    if(r.ok){showView('app');} else{msg.className='auth-msg err';msg.textContent=r.error;}
+    if(r.ok){
+      currentUser = r.user;
+      showView('app');
+    } else {
+      msg.className='auth-msg err';
+      msg.textContent=r.error;
+    }
   }catch(e){msg.className='auth-msg err';msg.textContent='Network error.';}
 }
 async function doLogin(){
@@ -842,7 +848,13 @@ async function doLogin(){
   if(!email||!password){msg.className='auth-msg err';msg.textContent='All fields required.';return;}
   try{
     const r=await(await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})})).json();
-    if(r.ok){showView('app');} else{msg.className='auth-msg err';msg.textContent=r.error;}
+    if(r.ok){
+      currentUser = r.user;
+      showView('app');
+    } else {
+      msg.className='auth-msg err';
+      msg.textContent=r.error;
+    }
   }catch(e){msg.className='auth-msg err';msg.textContent='Network error.';}
 }
 async function doLogout(){
@@ -851,7 +863,12 @@ async function doLogout(){
 }
 
 // Check session on load
-fetch('/api/auth/me').then(r=>r.json()).then(r=>{if(r.ok) showView('app');}).catch(()=>{});
+fetch('/api/auth/me').then(r=>r.json()).then(r=>{
+  if(r.ok) {
+    currentUser = r.user;
+    showView('app');
+  }
+}).catch(()=>{});
 
 // ─── CORE ENCRYPTION & RAAZ LINK LOGIC ───
 const log = (m,c='') => $('log').innerHTML += `<br><span class="${c}">[${new Date().toLocaleTimeString('en-GB')}] ${m}</span>`;
