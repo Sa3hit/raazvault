@@ -1068,7 +1068,7 @@ async function handleGoogleCallback(response) {
     const data = await res.json();
     if (data.ok) {
       currentUser = data.user;
-      showView('dashboard');
+      showView('app');
       loadDashboardData();
     } else {
       showAlert("Google Sign-In Failed: " + data.error, true);
