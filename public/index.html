@@ -98,6 +98,13 @@ body { font-family: var(--sans); background: var(--bg-main); color: var(--text-m
 .topbar-actions { display: flex; align-items: center; gap: 20px; }
 .btn { background: var(--cyan-gradient); color: white; border: none; padding: 12px 24px; border-radius: 14px; font-weight: 700; font-family: var(--sans); cursor: pointer; box-shadow: 0 4px 15px rgba(0,229,204,0.2); }
 .btn.secondary { background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
+
+/* User Profile in Topbar */
+.user-profile { display: flex; align-items: center; gap: 12px; padding-left: 20px; border-left: 1px solid var(--border); margin-left: 10px; }
+.user-info { text-align: right; }
+.user-name { font-weight: 700; font-size: 0.9rem; color: var(--text-main); line-height: 1.2; }
+.user-email { font-size: 0.75rem; color: var(--text-muted); }
+.user-avatar { width: 40px; height: 40px; background: var(--cyan-gradient); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0, 229, 204, 0.3); letter-spacing: 0.5px; }
 .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,229,204,0.3); }
 
 /* Dashboard Scrollable View */
@@ -354,7 +361,15 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
         <div class="topbar-actions">
           <span style="font-family:var(--mono); color:var(--text-muted); font-size:0.9rem;" id="clock">--:--:--</span>
           <button class="btn" onclick="openVaultModal()">↑ Upload File</button>
-          <button class="btn secondary" onclick="doLogout()">Logout</button>
+          
+          <div class="user-profile">
+            <div class="user-info">
+              <div class="user-name" id="userName">User Name</div>
+              <div class="user-email" id="userEmail">user@email.com</div>
+            </div>
+            <div class="user-avatar" id="userAvatar">??</div>
+            <button class="btn secondary" style="padding: 8px 16px; font-size: 0.85rem; margin-left: 10px;" onclick="doLogout()">Logout</button>
+          </div>
         </div>
       </div>
 
@@ -610,6 +625,7 @@ function showView(view) {
   $('topNav').style.display = view === 'app' ? 'none' : 'flex';
   
   if (view === 'app') {
+    updateUserProfile();
     fetchDashboardData();
     // Default to dashboard view on login
     switchDashboardView('viewDashboard', document.querySelector('.nav-item'));
@@ -1055,6 +1071,25 @@ function closePreviewRender() {
   $('previewRenderModal').classList.remove('show');
   $('previewContainer').innerHTML = ''; 
   currentPreviewBlob = null;
+}
+
+function updateUserProfile() {
+  if (!currentUser) return;
+  $('userName').textContent = currentUser.name;
+  $('userEmail').textContent = currentUser.email;
+  
+  // Generate initials (e.g., "Sachit Sharma" -> "SS")
+  const names = currentUser.name.trim().split(/\s+/);
+  let initials = "";
+  if (names.length > 1) {
+    initials = (names[0][0] + names[names.length - 1][0]).toUpperCase();
+  } else if (names.length === 1 && names[0].length > 0) {
+    initials = names[0].substring(0, 2).toUpperCase();
+  } else {
+    initials = "??";
+  }
+  
+  $('userAvatar').textContent = initials;
 }
 
 // ─── GOOGLE AUTH CALLBACK ────────────────────────────────────────────────────
