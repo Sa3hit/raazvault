@@ -100,18 +100,17 @@ const P2P = (() => {
         console.error('Socket.io error:', err);
       });
 
-      socket.on('connect_timeout', () => {
-        p2pLog('Signaling connection timed out.', 'warn');
-      });
-
       socket.on('peer-joined', async () => {
         p2pLog('Peer detected! Preparing handshake...', 'ok');
         setStatus('⚡ Peer connected — establishing tunnel...');
         showPeerOnRadar('P');
-        // Small delay to prevent race conditions during signaling
-        setTimeout(() => {
-          if (role === 'sender') createOffer();
-        }, 1000);
+        
+        // Sender initiates the handshake
+        if (role === 'sender') {
+          // Re-create/Initialize PC only when peer actually joins to ensure fresh ICE gathering
+          createPeerConnection();
+          setTimeout(() => createOffer(), 500); 
+        }
       });
 
       socket.on('peer-left', () => {
@@ -122,42 +121,65 @@ const P2P = (() => {
 
       socket.on('signal', async (data) => {
         try {
+          // ALWAYS ensure PeerConnection exists
+          if (!pc) createPeerConnection();
+
           if (data.type === 'offer') {
             p2pLog('📡 Receiving offer...', 'info');
             await pc.setRemoteDescription(new RTCSessionDescription(data));
+
+            // Process queued ICE candidates AFTER remote description
             while (iceCandidateQueue.length > 0) {
-              await pc.addIceCandidate(iceCandidateQueue.shift());
+              const cand = iceCandidateQueue.shift();
+              if (cand) {
+                await pc.addIceCandidate(cand).catch(e => console.warn('Late ICE error', e));
+              }
             }
+
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            socket.emit('signal', pc.localDescription);
-          } else if (data.type === 'answer') {
+            socket.emit('signal', pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription);
+          } 
+          else if (data.type === 'answer') {
             p2pLog('📡 Receiving answer...', 'info');
             await pc.setRemoteDescription(new RTCSessionDescription(data));
+
             while (iceCandidateQueue.length > 0) {
-              await pc.addIceCandidate(iceCandidateQueue.shift());
+              const cand = iceCandidateQueue.shift();
+              if (cand) {
+                await pc.addIceCandidate(cand).catch(e => console.warn('Late ICE error', e));
+              }
             }
-          } else if (data.candidate) {
-            const candidate = new RTCIceCandidate(data);
-            if (pc.remoteDescription && pc.remoteDescription.type) {
-              await pc.addIceCandidate(candidate);
-            } else {
-              iceCandidateQueue.push(candidate);
+          } 
+          else if (data.candidate !== undefined) {
+            if (data.candidate) {
+              const candidate = new RTCIceCandidate(data);
+              if (pc.remoteDescription && pc.remoteDescription.type) {
+                await pc.addIceCandidate(candidate).catch(e => console.warn('ICE error', e));
+              } else {
+                iceCandidateQueue.push(candidate);
+              }
             }
           }
         } catch (e) {
-          console.error('Signal error', e);
+          console.error('Signal error:', e);
+          p2pLog('Handshake error. Refresh and try again.', 'warn');
         }
       });
     });
   }
 
   function createPeerConnection() {
+    if (pc) {
+      try { pc.close(); } catch(e){}
+    }
     iceCandidateQueue = [];
     pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     pc.onicecandidate = (e) => {
-      if (e.candidate) socket.emit('signal', e.candidate);
+      if (e.candidate) {
+        socket.emit('signal', e.candidate.toJSON());
+      }
     };
 
     pc.oniceconnectionstatechange = () => {
@@ -166,10 +188,14 @@ const P2P = (() => {
         showRadar(false);
         setStatus('🟢 Tunnel established — ready to transfer');
         p2pLog('WebRTC tunnel is LIVE! Encrypted and direct.', 'ok');
-      } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-        showRadar(false);
+      } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') {
         setStatus('❌ Connection lost');
+        p2pLog('Connection interrupted.', 'warn');
       }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log("Connection State:", pc.connectionState);
     };
 
     pc.ondatachannel = (e) => {
@@ -179,6 +205,7 @@ const P2P = (() => {
   }
 
   function setupDataChannel() {
+    if (!dc) return;
     dc.binaryType = 'arraybuffer';
     dc.onopen = () => {
       p2pLog('Data channel open — encrypted P2P tunnel ready!', 'ok');
@@ -190,14 +217,21 @@ const P2P = (() => {
       }
     };
 
+    dc.onclose = () => {
+      p2pLog('Data channel closed.', 'warn');
+      setStatus('❌ Connection closed');
+    };
+
     dc.onmessage = (e) => {
       if (typeof e.data === 'string') {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'file-meta') {
-          recvMeta = msg; recvChunks = []; recvSize = 0;
-          p2pLog(`Receiving: ${msg.name}`, 'ok');
-          setStatus(`📥 Receiving: ${msg.name}`);
-        } else if (msg.type === 'file-done') { assembleFile(); }
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'file-meta') {
+            recvMeta = msg; recvChunks = []; recvSize = 0;
+            p2pLog(`Receiving: ${msg.name}`, 'ok');
+            setStatus(`📥 Receiving: ${msg.name}`);
+          } else if (msg.type === 'file-done') { assembleFile(); }
+        } catch(e) {}
       } else {
         recvChunks.push(e.data);
         recvSize += e.data.byteLength;
@@ -210,32 +244,43 @@ const P2P = (() => {
   }
 
   async function createOffer() {
+    if (!pc) createPeerConnection();
     p2pLog('📡 Initiating WebRTC handshake...', 'info');
-    createPeerConnection();
     dc = pc.createDataChannel('raazvault-p2p', { ordered: true });
     setupDataChannel();
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit('signal', pc.localDescription);
+    socket.emit('signal', pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription);
   }
 
   async function sendFile(file) {
-    if (!dc || dc.readyState !== 'open') return;
+    if (!dc || dc.readyState !== 'open') {
+      p2pLog('Data channel is not open. Cannot send.', 'warn');
+      return;
+    }
     p2pLog(`Sending: ${file.name}`, 'ok');
     setStatus(`📤 Sending: ${file.name}`);
     dc.send(JSON.stringify({ type: 'file-meta', name: file.name, size: file.size, mime: file.type || 'application/octet-stream' }));
+    
     const buffer = await file.arrayBuffer();
     const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
     let sent = 0;
+    
     for (let i = 0; i < totalChunks; i++) {
       const start = i * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, buffer.byteLength);
       const chunk = buffer.slice(start, end);
-      while (dc.bufferedAmount > 16 * CHUNK_SIZE) { await new Promise(r => setTimeout(r, 20)); }
+      
+      // Handle backpressure
+      while (dc.bufferedAmount > 4 * 1024 * 1024) { // 4MB buffer limit
+        await new Promise(r => setTimeout(r, 50));
+      }
+      
       dc.send(chunk);
       sent += chunk.byteLength;
       setProgress(Math.round((sent / buffer.byteLength) * 100));
     }
+    
     dc.send(JSON.stringify({ type: 'file-done' }));
     p2pLog('File sent successfully!', 'ok');
     setStatus('✅ File sent!');
@@ -252,7 +297,9 @@ const P2P = (() => {
   }
 
   async function createRoom() {
-    role = 'sender'; await connectSocket(); createPeerConnection();
+    role = 'sender'; 
+    await connectSocket(); 
+    // Don't create PC yet, wait for peer-joined
     socket.emit('create-room', (res) => {
       if (res.ok) {
         const initials = window.currentUser ? getInitials(window.currentUser.name) : '??';
@@ -262,20 +309,32 @@ const P2P = (() => {
         $('p2pCodeBox').style.display = 'block';
         $('p2pJoinBox').style.display = 'none';
         $('p2pActions').style.display = 'none';
+        p2pLog(`Room created: ${res.code}. Waiting for peer...`, 'info');
       }
     });
   }
 
   async function joinRoom(code) {
-    role = 'receiver'; await connectSocket(); createPeerConnection();
-    socket.emit('join-room', code.trim(), (res) => {
+    if (!code || code.trim().length < 6) {
+      p2pLog('Invalid room code.', 'warn');
+      return;
+    }
+    const cleanCode = code.replace(/\s/g, ''); // Strip all whitespace
+    role = 'receiver'; 
+    await connectSocket(); 
+    
+    socket.emit('join-room', cleanCode, (res) => {
       if (res.ok) {
         const initials = window.currentUser ? getInitials(window.currentUser.name) : '??';
         showRadar(true, initials);
-        roomCode = code.trim();
+        roomCode = cleanCode;
         setStatus('⚡ Connecting to peer...');
         $('p2pActions').style.display = 'none';
         $('p2pJoinBox').style.display = 'none';
+        p2pLog(`Joined room ${cleanCode}. Awaiting offer...`, 'info');
+      } else {
+        p2pLog(`Error: ${res.error || 'Could not join room.'}`, 'warn');
+        setStatus('❌ ' + (res.error || 'Join failed'));
       }
     });
   }
@@ -285,6 +344,7 @@ const P2P = (() => {
     if (dc) { try { dc.close(); } catch(e){} dc = null; }
     if (pc) { try { pc.close(); } catch(e){} pc = null; }
   }
+
 
   function getInitials(name) {
     if (!name) return '??';

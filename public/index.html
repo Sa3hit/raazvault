@@ -499,6 +499,9 @@ const log = (m,c='') => $('log').innerHTML += `<br><span class="${c}">${m}</span
 function setFile(f){ selectedFile=f; $('fileChip').style.display='block'; $('fileChip').textContent=f.name; }
 
 $('file').onchange = e => setFile(e.target.files[0]);
+$('p2pFile').onchange = e => P2P.sendFile(e.target.files[0]);
+$('p2pDrop').onclick = () => $('p2pFile').click();
+
 $('encryptBtn').onclick = async () => {
   if(!selectedFile) return;
   const fd = new FormData(); fd.append('file', selectedFile); fd.append('originalName', selectedFile.name); fd.append('ttlSeconds', $('ttl').value); fd.append('maxViews', $('views').value);
