@@ -51,6 +51,14 @@ const P2P = (() => {
     if (info) info.textContent = speed ? `${pct}% · ${speed}` : `${pct}%`;
   }
 
+  function showRadar(show) {
+    const r = $('p2pRadar'), rt = $('p2pRadarText');
+    if (r && rt) {
+      if (show) { r.classList.add('active'); rt.classList.add('active'); }
+      else { r.classList.remove('active'); rt.classList.remove('active'); }
+    }
+  }
+
   // ─── SOCKET CONNECTION ─────────────────────────────────────────────────
   function connectSocket() {
     if (socket && socket.connected) return Promise.resolve();
@@ -115,9 +123,11 @@ const P2P = (() => {
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       if (state === 'connected' || state === 'completed') {
+        showRadar(false);
         setStatus('🟢 Tunnel established — ready to transfer');
         p2pLog('WebRTC tunnel is LIVE! Encrypted and direct.', 'ok');
       } else if (state === 'disconnected' || state === 'failed') {
+        showRadar(false);
         p2pLog('Connection lost.', 'warn');
         setStatus('❌ Connection lost');
       }
@@ -262,6 +272,7 @@ const P2P = (() => {
 
     socket.emit('create-room', (res) => {
       if (res.ok) {
+        showRadar(true);
         roomCode = res.code;
         p2pLog(`Room created: ${res.code}`, 'ok');
         setStatus('⏳ Waiting for peer to join...');
@@ -288,6 +299,7 @@ const P2P = (() => {
 
     socket.emit('join-room', code.trim(), (res) => {
       if (res.ok) {
+        showRadar(true);
         roomCode = code.trim();
         p2pLog(`Joined room: ${code}`, 'ok');
         setStatus('⚡ Connecting to peer...');
@@ -302,6 +314,7 @@ const P2P = (() => {
 
   // ─── CLEANUP ───────────────────────────────────────────────────────────
   function cleanup() {
+    showRadar(false);
     if (dc) { try { dc.close(); } catch(e){} dc = null; }
     if (pc) { try { pc.close(); } catch(e){} pc = null; }
     $('p2pFileSection').style.display = 'none';

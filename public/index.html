@@ -158,6 +158,48 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
 .p2p-copy{margin-top:12px;padding:8px 20px;background:var(--cyan);color:white;border:none;border-radius:10px;font-family:var(--mono);font-weight:700;cursor:pointer;}
 #p2pJoinBox{display:none;margin-top:16px}
 #p2pActions{display:flex;gap:12px;margin-top:16px}
+
+/* Radar Animation */
+.radar-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 16px auto;
+  border-radius: 50%;
+  border: 1px solid var(--cyan);
+  background: var(--bg-main);
+  overflow: hidden;
+  display: none;
+}
+.radar-container.active { display: block; }
+.radar-beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  background: conic-gradient(from 0deg, transparent 70%, rgba(0, 184, 169, 0.4) 100%);
+  transform-origin: 0 0;
+  animation: radar-spin 2s linear infinite;
+}
+.radar-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: radar-ping 2s ease-out infinite;
+}
+@keyframes radar-spin { 100% { transform: rotate(360deg); } }
+@keyframes radar-ping { 
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 
+  100% { transform: translate(-50%, -50%) scale(5); opacity: 0; } 
+}
+#p2pRadarText { text-align: center; font-family: var(--mono); font-size: 0.75rem; color: var(--cyan); margin-bottom: 12px; display: none; }
+#p2pRadarText.active { display: block; }
 #p2pActions button{flex:1}
 #p2pFileSection{display:none;margin-top:16px}
 </style>
@@ -416,6 +458,12 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
         <button class="btn" onclick="P2P.createRoom()" style="flex:1">📡 Create Room</button>
         <button class="btn secondary" onclick="document.getElementById('p2pJoinBox').style.display='block';this.parentElement.style.display='none'" style="flex:1">📥 Join Room</button>
       </div>
+
+      <div id="p2pRadar" class="radar-container">
+        <div class="radar-beam"></div>
+        <div class="radar-pulse"></div>
+      </div>
+      <div id="p2pRadarText">Scanning for nearby devices...</div>
 
       <div id="p2pCodeBox">
         <div style="font-family:var(--mono);font-size:.72rem;color:var(--text-muted);">Your Room Code</div>
