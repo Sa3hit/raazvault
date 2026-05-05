@@ -1069,7 +1069,6 @@ async function handleGoogleCallback(response) {
     if (data.ok) {
       currentUser = data.user;
       showView('app');
-      loadDashboardData();
     } else {
       showAlert("Google Sign-In Failed: " + data.error, true);
     }
