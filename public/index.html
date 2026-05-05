@@ -100,11 +100,16 @@ body { font-family: var(--sans); background: var(--bg-main); color: var(--text-m
 .btn.secondary { background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
 
 /* User Profile in Topbar */
-.user-profile { display: flex; align-items: center; gap: 12px; padding-left: 20px; border-left: 1px solid var(--border); margin-left: 10px; }
+.user-profile { display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-radius: 20px; background: white; border: 1px solid var(--border); transition: 0.3s; cursor: pointer; }
+.user-profile:hover { border-color: var(--cyan); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .user-info { text-align: right; }
-.user-name { font-weight: 700; font-size: 0.9rem; color: var(--text-main); line-height: 1.2; }
-.user-email { font-size: 0.75rem; color: var(--text-muted); }
-.user-avatar { width: 40px; height: 40px; background: var(--cyan-gradient); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0, 229, 204, 0.3); letter-spacing: 0.5px; }
+.user-name { font-weight: 700; font-size: 0.85rem; color: var(--text-main); line-height: 1.2; }
+.user-email { font-size: 0.7rem; color: var(--text-muted); }
+.user-avatar { width: 36px; height: 36px; background: var(--cyan-gradient); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; box-shadow: 0 4px 10px rgba(0, 229, 204, 0.3); }
+
+.logout-link { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 8px 12px; border-radius: 10px; transition: 0.2s; }
+.logout-link:hover { color: var(--danger); background: #fee2e2; }
+
 .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,229,204,0.3); }
 
 /* Dashboard Scrollable View */
@@ -359,16 +364,18 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
           🔍 <input type="text" placeholder="Search files...">
         </div>
         <div class="topbar-actions">
-          <span style="font-family:var(--mono); color:var(--text-muted); font-size:0.9rem;" id="clock">--:--:--</span>
-          <button class="btn" onclick="openVaultModal()">↑ Upload File</button>
+          <span style="font-family:var(--mono); color:var(--text-muted); font-size:0.85rem;" id="clock">--:--:--</span>
+          <button class="btn" style="padding: 10px 20px; font-size: 0.9rem;" onclick="openVaultModal()">↑ Upload File</button>
           
-          <div class="user-profile">
-            <div class="user-info">
-              <div class="user-name" id="userName">User Name</div>
-              <div class="user-email" id="userEmail">user@email.com</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="user-profile">
+              <div class="user-info">
+                <div class="user-name" id="userName">User Name</div>
+                <div class="user-email" id="userEmail">user@email.com</div>
+              </div>
+              <div class="user-avatar" id="userAvatar">??</div>
             </div>
-            <div class="user-avatar" id="userAvatar">??</div>
-            <button class="btn secondary" style="padding: 8px 16px; font-size: 0.85rem; margin-left: 10px;" onclick="doLogout()">Logout</button>
+            <div class="logout-link" onclick="doLogout()">Logout</div>
           </div>
         </div>
       </div>
