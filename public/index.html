@@ -613,6 +613,31 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
 <script>
 const $ = id => document.getElementById(id);
 let selectedFile = null;
+let currentUser = null;
+
+function updateUserProfile() {
+  if (!currentUser) return;
+  const nameEl = $('userName');
+  const emailEl = $('userEmail');
+  const avatarEl = $('userAvatar');
+  
+  if (nameEl) nameEl.textContent = currentUser.name;
+  if (emailEl) emailEl.textContent = currentUser.email;
+  
+  // Generate initials (e.g., "Sachit Sharma" -> "SS")
+  if (avatarEl) {
+    const names = currentUser.name.trim().split(/\s+/);
+    let initials = "";
+    if (names.length > 1) {
+      initials = (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    } else if (names.length === 1 && names[0].length > 0) {
+      initials = names[0].substring(0, 2).toUpperCase();
+    } else {
+      initials = "??";
+    }
+    avatarEl.textContent = initials;
+  }
+}
 
 // Clock
 setInterval(()=> $('clock').textContent = new Date().toLocaleTimeString('en-GB'),1000);
@@ -1090,23 +1115,10 @@ function closePreviewRender() {
   currentPreviewBlob = null;
 }
 
-function updateUserProfile() {
-  if (!currentUser) return;
-  $('userName').textContent = currentUser.name;
-  $('userEmail').textContent = currentUser.email;
-  
-  // Generate initials (e.g., "Sachit Sharma" -> "SS")
-  const names = currentUser.name.trim().split(/\s+/);
-  let initials = "";
-  if (names.length > 1) {
-    initials = (names[0][0] + names[names.length - 1][0]).toUpperCase();
-  } else if (names.length === 1 && names[0].length > 0) {
-    initials = names[0].substring(0, 2).toUpperCase();
-  } else {
-    initials = "??";
-  }
-  
-  $('userAvatar').textContent = initials;
+function closePreviewRender() {
+  $('previewRenderModal').classList.remove('show');
+  $('previewContainer').innerHTML = ''; 
+  currentPreviewBlob = null;
 }
 
 // ─── GOOGLE AUTH CALLBACK ────────────────────────────────────────────────────
