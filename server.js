@@ -264,6 +264,66 @@ app.get('/api/auth/me', (req, res) => {
   }
 });
 
+// ─── GET CURRENT USER'S FILES ──────────────────────────────────────────────────
+// GET /api/files/me — returns the logged-in user's files and stats
+app.get('/api/files/me', (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.json({ ok: false, error: 'Not logged in.' });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userEmail = decoded.email;
+    
+    const files = fs.readdirSync(UPLOADS_DIR).filter(f => f.endsWith('.json'));
+    const userFiles = [];
+    let totalStorage = 0;
+    let activeLinks = 0;
+
+    for (const file of files) {
+      try {
+        const metaPath = path.join(UPLOADS_DIR, file);
+        const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+        
+        // Skip expired files
+        if (Date.now() > metadata.expiresAt || metadata.viewsUsed >= metadata.maxViews) {
+          continue;
+        }
+
+        if (metadata.uploadedBy === userEmail) {
+          userFiles.push({
+            id: metadata.id,
+            name: metadata.originalName,
+            size: metadata.originalSize,
+            createdAt: metadata.createdAt,
+            expiresAt: metadata.expiresAt,
+            viewsLeft: metadata.maxViews - metadata.viewsUsed,
+            mime: metadata.mime
+          });
+          totalStorage += metadata.originalSize;
+          activeLinks++;
+        }
+      } catch (err) {
+        // Skip unparseable files
+      }
+    }
+
+    // Sort files by newest first
+    userFiles.sort((a, b) => b.createdAt - a.createdAt);
+
+    res.json({ 
+      ok: true, 
+      files: userFiles, 
+      stats: {
+        totalFiles: userFiles.length,
+        totalStorage,
+        activeLinks
+      }
+    });
+  } catch (err) {
+    res.json({ ok: false, error: 'Invalid token or error fetching files.' });
+  }
+});
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  FILE SHARING API (Upload / Metadata / Download)
@@ -417,6 +477,36 @@ app.get('/api/file/:id/download', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${fileId}.raaz"`);
   fs.createReadStream(filePath).pipe(res);
 });
+
+// ─── REVOKE (DELETE) FILE ─────────────────────────────────────────────────────
+// DELETE /api/file/:id
+// Allows the uploader to manually revoke a file before it expires
+app.delete('/api/file/:id', (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.json({ ok: false, error: 'Not logged in.' });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const fileId = req.params.id;
+    const metaPath = path.join(UPLOADS_DIR, fileId + '.json');
+
+    if (!fs.existsSync(metaPath)) {
+      return res.json({ ok: false, error: 'File not found or already deleted.' });
+    }
+
+    const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+    
+    if (metadata.uploadedBy !== decoded.email) {
+      return res.status(403).json({ ok: false, error: 'Unauthorized. You did not upload this file.' });
+    }
+
+    deleteFile(fileId);
+    res.json({ ok: true, message: 'File permanently revoked.' });
+  } catch (err) {
+    res.json({ ok: false, error: 'Invalid token or server error.' });
+  }
+});
+
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
