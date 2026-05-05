@@ -75,7 +75,8 @@ if (IS_PRODUCTION) app.set('trust proxy', 1);
 // These headers tell browsers to be more strict about what they allow.
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled because our inline styles/scripts need to work
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" } // REQUIRED for Google Sign-In popups
 }));
 
 // JSON parser: Allows the server to read JSON data sent in request bodies
