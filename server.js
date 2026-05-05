@@ -43,6 +43,7 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const path = require('path');
+const { OAuth2Client } = require('google-auth-library');
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
@@ -51,6 +52,8 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');       // Where encrypted bl
 const USERS_FILE = path.join(__dirname, 'users.json');     // Simple JSON-based user storage
 const JWT_SECRET = process.env.JWT_SECRET || 'raazvault-local-dev-secret-key-2026';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB limit (free tier friendly)
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // ─── ENSURE DIRECTORIES AND FILES EXIST ──────────────────────────────────────
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -241,6 +244,64 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err);
     res.json({ ok: false, error: 'Login failed.' });
+  }
+});
+
+// ─── GOOGLE LOGIN / SIGNUP ───────────────────────────────────────────────────
+// POST /api/auth/google
+// Body: { credential }
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.json({ ok: false, error: 'No Google credential provided.' });
+    }
+
+    // Verify the Google JWT token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const name = payload.name;
+    const googleId = payload.sub;
+
+    const users = getUsers();
+    let user = users.find(u => u.email === email);
+
+    // If user doesn't exist, create an account instantly
+    if (!user) {
+      user = {
+        id: uuidv4(),
+        name: name,
+        email: email,
+        password: `GOOGLE_AUTH_${googleId}`, // Placeholder password for Google users
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      saveUsers(users);
+    }
+
+    // Issue JWT Token exactly like standard login
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
+      secure: IS_PRODUCTION
+    });
+
+    res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email } });
+  } catch (err) {
+    console.error('Google Auth Error:', err.message);
+    res.json({ ok: false, error: 'Google Authentication failed.' });
   }
 });
 

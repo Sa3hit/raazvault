@@ -224,6 +224,7 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
 #p2pActions button{flex:1}
 #p2pFileSection{display:none;margin-top:16px}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -258,6 +259,25 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
       <input type="password" id="signupPass" placeholder="Create password">
       <button onclick="doSignup()">Sign up</button>
       <div class="auth-msg" id="signupMsg"></div>
+
+      <!-- Google Sign In Button -->
+      <div style="margin-top: 24px; text-align: center;">
+        <div id="g_id_onload"
+             data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
+             data-context="use"
+             data-ux_mode="popup"
+             data-callback="handleGoogleCallback"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="continue_with"
+             data-size="large"
+             data-logo_alignment="left">
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -283,6 +303,18 @@ h1 { font-size: 3rem; margin-bottom: 8px; color: var(--text-main); letter-spacin
       <input type="password" id="loginPass" placeholder="Password">
       <button onclick="doLogin()">Log in</button>
       <div class="auth-msg" id="loginMsg"></div>
+
+      <!-- Google Sign In Button -->
+      <div style="margin-top: 24px; text-align: center;">
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="continue_with"
+             data-size="large"
+             data-logo_alignment="left">
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1023,6 +1055,28 @@ function closePreviewRender() {
   $('previewRenderModal').classList.remove('show');
   $('previewContainer').innerHTML = ''; 
   currentPreviewBlob = null;
+}
+
+// ─── GOOGLE AUTH CALLBACK ────────────────────────────────────────────────────
+async function handleGoogleCallback(response) {
+  try {
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentUser = data.user;
+      showView('dashboard');
+      loadDashboardData();
+    } else {
+      showAlert("Google Sign-In Failed: " + data.error, true);
+    }
+  } catch (err) {
+    console.error("Google auth error", err);
+    showAlert("An error occurred during Google Sign-In.", true);
+  }
 }
 </script>
 <script src="/socket.io/socket.io.js"></script>
